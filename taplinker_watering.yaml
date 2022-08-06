@@ -1,0 +1,104 @@
+blueprint:
+  name: taplinker_watering
+  description: >
+    A script that configures a TapLinker to water for the specified duration.
+    Please ensure that the entities used in a script belong to the same Taplinker device.
+    The steps in this script are:
+    1) Check the Taplinker's RF connection status. If it is offline, then do nothing.
+    2) Check the Taplinker's watering status. If the Taplinker is already in a watering process when the script is started, the current watering process will be stopped first to save watering records.
+    3) Turn on Taplinker's water switch and wait for the watering status to change to 'on'.
+    4) Once the watering status is on, the script hangs until the watering duration runs out.
+    5) After the watering duration runs out, check if the RF connection remains online and the watering status is still 'on'. If both conditions are met, then turn off the water switch.
+  domain: script
+  source_url: https://github.com/jimlktwork/ha/blob/main/taplinker_watering.yaml
+  input:
+    taplinker_switch_entity:
+      name: TapLinker Water Switch (switch.*_water_switch)
+      description: Switch for controlling Taplinker's valve.
+      selector:
+        entity:
+          domain: switch
+    watering_duration:
+      name: Watering Duration
+      description: It determines how long (in seconds) the Taplinker's watering state remains.
+      default: 60
+      selector:
+        number:
+          min: 3
+          max: 86399
+          unit_of_measurement: seconds
+    taplinker_watering_stat:
+      name: TapLinker Watering Status (binary_sensor.*_is_watering)
+      description: The script uses the state of this entity to determine if the Taplinker is in watering state.
+      selector:
+        entity:
+          domain: binary_sensor
+    taplinker_rf_link_stat:
+      name: TapLinker RF Connection (binary_sensor.*_is_rf_linked)
+      description: Before sending command to the switch, the script needs to check if the Taplinker is online.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: connectivity
+
+mode: single
+
+sequence:
+  - if:
+    # If the Taplinker is offline, do nothing
+      - condition: state
+        entity_id: !input taplinker_rf_link_stat
+        state: 'on'
+    then:
+      - if:
+            # If the Taplinker is already in watering process, turn it off first to save watering records
+          - condition: state
+            entity_id: !input taplinker_watering_stat
+            state: 'on'
+        then:
+          - alias: "Turn off the Taplinker first because it is already in watering"
+            type: turn_off
+            domain: switch
+            entity_id: !input taplinker_switch_entity
+            device_id: "{{device_id(entity_id)}}"
+            # Wait until the Taplinker turned off or timeout
+          - wait_for_trigger:
+              - type: turned_off
+                platform: device
+                entity_id: !input taplinker_watering_stat
+                device_id: "{{device_id(entity_id)}}"
+                domain: binary_sensor
+            continue_on_timeout: false
+            timeout: '30'
+        # Turn on the Taplinker water switch
+      - domain: switch
+        type: turn_on
+        entity_id: !input taplinker_switch_entity
+        device_id: "{{device_id(entity_id)}}"
+        # Wait until the watering status is turned on, because there is some delay between the Taplinker, the gateway and Home Assistant.
+      - wait_for_trigger:
+          - type: turned_on
+            platform: device
+            entity_id: !input taplinker_watering_stat
+            device_id: "{{device_id(entity_id)}}"
+            domain: binary_sensor
+        continue_on_timeout: false
+        timeout: '30'
+        # Wait for the watering process to end.
+        # NOTE: Due to the delay between the Taplinker, the gateway and Home Assistant, 
+        #       the actual watering duration will be a little longer (less than 15 seconds) than the set duration.
+      - delay: !input watering_duration
+      - if:
+          - condition: state
+            entity_id: !input taplinker_rf_link_stat
+            state: 'on'
+          - condition: state
+            entity_id: !input taplinker_watering_stat
+            state: 'on'
+        then:
+        # The watering duration runs out now, if the Taplinker is online and still in watering, we stop the watering.
+          - type: turn_off
+            domain: switch
+            entity_id: !input taplinker_switch_entity
+            device_id: "{{device_id(entity_id)}}"
+
