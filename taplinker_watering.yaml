@@ -74,10 +74,10 @@ sequence:
             continue_on_timeout: false
             timeout: '30'
         # Set runtime to avoid running longer than planned
-        - service: mqtt.publish
-          data:
-            topic: /homeassistant/taplink_config_from_ha
-            payload: "{\"tag\":\"total_duration\",\"id\":\"!input taplinker_id\",\"value\":!input watering_duration}"
+      - service: mqtt.publish
+        data:
+          topic: /homeassistant/taplink_config_from_ha
+          payload: "{\"tag\":\"total_duration\",\"id\":\"!input taplinker_id\",\"value\":!input watering_duration}"
         # Turn on the Taplinker water switch
       - domain: switch
         type: turn_on
