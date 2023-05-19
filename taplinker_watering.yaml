@@ -45,6 +45,10 @@ blueprint:
           device_class: connectivity
 
 mode: single
+variables:
+  # Make input my_input available as a script level variable
+  the_device_id: !input taplinker_id
+  the_duration: !input watering_duration
 
 sequence:
   - if:
@@ -76,8 +80,8 @@ sequence:
         # Set runtime to avoid running longer than planned
       - service: mqtt.publish
         data:
-          topic: /homeassistant/taplink_config_from_ha
-          payload: "{\"tag\":\"total_duration\",\"id\":\"!input taplinker_id\",\"value\":!input watering_duration}"
+          topic: /homeassistant/linktap_config_from_ha
+          payload: "{\"tag\":\"total_duration\",\"id\":\"{{the_device_id}}\",\"value\":{{the_duration}}}"
         # Turn on the Taplinker water switch
       - domain: switch
         type: turn_on
