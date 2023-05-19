@@ -27,7 +27,7 @@ blueprint:
       default: 60
       selector:
         number:
-          min: 18
+          min: 33
           max: 86399
           unit_of_measurement: seconds
     taplinker_watering_stat:
@@ -80,8 +80,8 @@ sequence:
         # Set runtime to avoid running longer than planned
       - service: mqtt.publish
         data:
-          topic: /homeassistant/linktap_config_from_ha
-          payload: "{\"tag\":\"total_duration\",\"id\":\"{{the_device_id}}\",\"value\":{{the_duration - 15}}}"
+          topic: homeassistant/linktap_config_from_ha
+          payload: "{\"tag\":\"total_duration\",\"id\":\"{{the_device_id}}\",\"value\":{{the_duration - 30}}}"
         # Turn on the Taplinker water switch
       - domain: switch
         type: turn_on
