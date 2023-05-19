@@ -3,6 +3,8 @@ blueprint:
   description: >
     A script that configures a TapLinker to water for the specified duration.
     Please ensure that the entities used in a script belong to the same Taplinker device.
+    Make sure you have configured your Mqtt topic downlink to be "homeassistant/linktap_config_from_ha" otherwise you can't set fields.
+    
     The steps in this script are:
     1) Check the Taplinker's RF connection status. If it is offline, then do nothing.
     2) Check the Taplinker's watering status. If the Taplinker is already in a watering process when the script is started, the current watering process will be stopped first to save watering records.
