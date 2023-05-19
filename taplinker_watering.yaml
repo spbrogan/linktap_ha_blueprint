@@ -1,20 +1,23 @@
 blueprint:
-  name: taplinker_watering
+  name: taplinker_watering_with_duration
   description: >
     A script that configures a TapLinker to water for the specified duration.
     Please ensure that the entities used in a script belong to the same Taplinker device.
     The steps in this script are:
     1) Check the Taplinker's RF connection status. If it is offline, then do nothing.
     2) Check the Taplinker's watering status. If the Taplinker is already in a watering process when the script is started, the current watering process will be stopped first to save watering records.
-    3) Turn on Taplinker's water switch and wait for the watering status to change to 'on'.
-    4) Once the watering status is on, the script hangs until the watering duration runs out.
-    5) After the watering duration runs out, check if the RF connection remains online and the watering status is still 'on'. If both conditions are met, then turn off the water switch.
+    3) Set the duration so that if a problem occurs in the script the water will still turn off
+    4) Turn on Taplinker's water switch and wait for the watering status to change to 'on'.
+    5) Once the watering status is on, the script hangs until the watering duration runs out.
+    6) After the watering duration runs out, check if the RF connection remains online and the watering status is still 'on'. If both conditions are met, then turn off the water switch.
   domain: script
-  source_url: https://github.com/jimlktwork/ha/blob/main/taplinker_watering.yaml
+  source_url: https://github.com/spbrogan/linktap_ha_blueprint/blob/main/taplinker_watering.yaml
   input:
     taplinker_id:
       name: TapLinker Device ID
       description: ID value for the device.  See ID from water switch and other sensors.
+      selector:
+        text:
     taplinker_switch_entity:
       name: TapLinker Water Switch (switch.*_water_switch)
       description: Switch for controlling Taplinker's valve.
@@ -27,7 +30,7 @@ blueprint:
       default: 60
       selector:
         number:
-          min: 33
+          min: 13
           max: 86399
           unit_of_measurement: seconds
     taplinker_watering_stat:
@@ -81,7 +84,7 @@ sequence:
       - service: mqtt.publish
         data:
           topic: homeassistant/linktap_config_from_ha
-          payload: "{\"tag\":\"total_duration\",\"id\":\"{{the_device_id}}\",\"value\":{{the_duration - 30}}}"
+          payload: "{\"tag\":\"total_duration\",\"id\":\"{{the_device_id}}\",\"value\":{{the_duration - 10}}}"
         # Turn on the Taplinker water switch
       - domain: switch
         type: turn_on
